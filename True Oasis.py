@@ -97,7 +97,7 @@ class MyGame(arcade.Window):
             self.true_false_statements.append(true_or_false)
             self.true_false_tuple.append(img)
             
-        for i in range(OASIS_COUNT):
+        # for i in range(OASIS_COUNT):
             self.combine_statements.append((self.true_false_statements[i], self.true_false_tuple[i][1]))
 
         
@@ -107,8 +107,8 @@ class MyGame(arcade.Window):
         self.clear()
         arcade.draw_lrtb_rectangle_filled(0, SCREEN_WIDTH, SCREEN_HEIGHT * 2 / 3 + 50, 0, arcade.color.DESERT)
         self.true_false_statements.draw()
-        self.cursor_list.draw()
         self.oasis_list.draw()
+        self.cursor_list.draw()
 
         # Put the text on the screen.
         output = f"Score: {self.score}"
@@ -129,63 +129,65 @@ class MyGame(arcade.Window):
     
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
-        if button == arcade.MOUSE_BUTTON_LEFT:
-            statement_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.true_false_statements)
-            for _ in statement_hit_list:
-                
-                if statement_hit_list == [self.combine_statements[0][0]]:
-                    if self.combine_statements[0][1] == "TRUE":
-                        self.score += 300
-                        start_x = 0
-                        start_y = SCREEN_HEIGHT - DEFAULT_LINE_HEIGHT * 1.5
-                        arcade.draw_text("Text Drawing Examples",
-                                        start_x,
-                                        start_y,
-                                        arcade.color.BLACK,
-                                        DEFAULT_FONT_SIZE * 2,
-                                        width=SCREEN_WIDTH,
-                                        align="center")
-                    else:
-                        self.score -= 100
-                elif statement_hit_list == [self.combine_statements[1][0]]:
-                    if self.combine_statements[1][1] == "TRUE":
-                        self.score += 300
-                        start_x = 0
-                        start_y = SCREEN_HEIGHT - DEFAULT_LINE_HEIGHT * 1.5
-                        arcade.draw_text("Text Drawing Examples",
-                                        start_x,
-                                        start_y,
-                                        arcade.color.BLACK,
-                                        DEFAULT_FONT_SIZE * 2,
-                                        width=SCREEN_WIDTH,
-                                        align="center")
-                    else:
-                        self.score -= 100
-                elif statement_hit_list == [self.combine_statements[2][0]]:
-                    if self.combine_statements[2][1] == "TRUE":
-                        self.score += 300
-                        start_x = 0
-                        start_y = SCREEN_HEIGHT - DEFAULT_LINE_HEIGHT * 1.5
-                        arcade.draw_text("Text Drawing Examples",
-                                        start_x,
-                                        start_y,
-                                        arcade.color.BLACK,
-                                        DEFAULT_FONT_SIZE * 2,
-                                        width=SCREEN_WIDTH,
-                                        align="center")
-                    else:
-                        self.score -= 100
+        # if button == arcade.MOUSE_BUTTON_LEFT:
+        print(self.combine_statements[0]) # Image with truthfulness
+        print(self.true_false_tuple[0]) # Button with truthfulness
+        statement_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.true_false_statements)
+        for _ in statement_hit_list:
+            
+            if statement_hit_list == [self.combine_statements[0][0]]:
+                if self.combine_statements[0][1] == "TRUE":
+                    self.score += 300
+                    start_x = 0
+                    start_y = SCREEN_HEIGHT - DEFAULT_LINE_HEIGHT * 1.5
+                    arcade.draw_text("Text Drawing Examples",
+                                    start_x,
+                                    start_y,
+                                    arcade.color.BLACK,
+                                    DEFAULT_FONT_SIZE * 2,
+                                    width=SCREEN_WIDTH,
+                                    align="center")
+                else:
+                    self.score -= 100
+            elif statement_hit_list == [self.combine_statements[1][0]]:
+                if self.combine_statements[1][1] == "TRUE":
+                    self.score += 300
+                    start_x = 0
+                    start_y = SCREEN_HEIGHT - DEFAULT_LINE_HEIGHT * 1.5
+                    arcade.draw_text("Text Drawing Examples",
+                                    start_x,
+                                    start_y,
+                                    arcade.color.BLACK,
+                                    DEFAULT_FONT_SIZE * 2,
+                                    width=SCREEN_WIDTH,
+                                    align="center")
+                else:
+                    self.score -= 100
+            elif statement_hit_list == [self.combine_statements[2][0]]:
+                if self.combine_statements[2][1] == "TRUE":
+                    self.score += 300
+                    start_x = 0
+                    start_y = SCREEN_HEIGHT - DEFAULT_LINE_HEIGHT * 1.5
+                    arcade.draw_text("Text Drawing Examples",
+                                    start_x,
+                                    start_y,
+                                    arcade.color.BLACK,
+                                    DEFAULT_FONT_SIZE * 2,
+                                    width=SCREEN_WIDTH,
+                                    align="center")
+                else:
+                    self.score -= 100
 
-                # When you click on an equation, remove the two FALSE oasis sprites
-                if self.true_false_tuple[0][1] == 'TRUE':
-                    self.oasis_list[2].remove_from_sprite_lists()
-                    self.oasis_list[1].remove_from_sprite_lists()
-                elif self.true_false_tuple[1][1] == 'TRUE':
-                    self.oasis_list[2].remove_from_sprite_lists()
-                    self.oasis_list[0].remove_from_sprite_lists()
-                elif self.true_false_tuple[2][1] == 'TRUE':
-                    self.oasis_list[1].remove_from_sprite_lists()
-                    self.oasis_list[0].remove_from_sprite_lists()
+            # When you click on an equation, remove the two FALSE oasis sprites
+            if self.true_false_tuple[0][1] == 'TRUE':
+                self.oasis_list[2].remove_from_sprite_lists()
+                self.oasis_list[1].remove_from_sprite_lists()
+            elif self.true_false_tuple[1][1] == 'TRUE':
+                self.oasis_list[2].remove_from_sprite_lists()
+                self.oasis_list[0].remove_from_sprite_lists()
+            elif self.true_false_tuple[2][1] == 'TRUE':
+                self.oasis_list[1].remove_from_sprite_lists()
+                self.oasis_list[0].remove_from_sprite_lists()
         
 
 
