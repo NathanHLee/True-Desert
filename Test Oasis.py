@@ -1,92 +1,83 @@
-from math import comb
-from pickle import TRUE
-import random
 import arcade
+import random
 
-# --- Constants ---
-SPRITE_SCALING = 1
-OASIS_COUNT = 3
-
+# ---- Globals ----
+# Screen
 SCREEN_WIDTH = 900
-SCREEN_HEIGHT = 700
-DEFAULT_FONT_SIZE = 10
+SCREEN_HEIGHT = 600
 SCREEN_TITLE = "True Oasis"
 
-TRUE_STATEMENTS = ['1a.png', '1b.png', '1c.png']
-FALSE_STATEMENTS = ['0a.png', '0b.png', '0c.png', '0d.png', '0e.png', '0f.png', '0g.png', '0h.png', '0i.png']
 
 
 
-class Button(arcade.Sprite):
-    def __init__(self, x, y):
+# ---- ----
+class Cursor(arcade.Sprite):
+    def __init__(self, sprite, scale):
+        """ Collect Character Information """
         super().__init__()
-        self.button_image = arcade.load_texture("Button.png")
+        self.sprite = sprite
+        self.scale = scale
 
-    def on_draw(self):
-        
+    def update(self):
+        """ Move the cursor """
+        self.center_x = self.change_x
+        self.center_y = self.change_y
 
 
 
-class MyGame(arcade.Window):
-    """ Our custom Window Class"""
-
+class TrueOasis(arcade.View):
     def __init__(self):
-        """ Initializer """
-        # Call the parent class initializer
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        """ Create empty variables """
+        super().__init__()
 
-        # Variables that will hold sprite lists
+        # Create the sprites
+        self.cursor_list = None
+        self.oasis_list = None
+        self.button_list = None
+
+        # Create player info
+        self.cursor_sprite = None
+        self.score = 0
+
+        # Make the cursor invisible
+        self.window.set_mouse_visible(False)
+
+        # Create the background
+        arcade.set_background_color(arcade.color.SKY_BLUE)
+
+    def setup(self):
+        """ Set Up Value To Variables """
+        # Sprite lists
         self.cursor_list = arcade.SpriteList()
         self.oasis_list = arcade.SpriteList()
 
-        # Set up the player info
-        self.player_sprite = arcade.Sprite("Cursor.png", SPRITE_SCALING / 2)
-        self.cursor_list.append(self.player_sprite)
-        self.score = 0
-
-        # Don't show the mouse cursor
-        self.set_mouse_visible(False)
-
-        # Background for the sky
-        arcade.set_background_color(arcade.color.SKY_BLUE)
-
-
-    def setup(self):
-        """ Set up the game and initialize the variables. """
         # Score
         count = 0
-        exception = False
-        pass
+
+        # Set up the cursor
+        self.cursor_sprite = Cursor("Cursor.png", .5)
+        self.cursor_sprite.center_x = 1
+        self.cursor_sprite.center_y = 1
+        self.cursor_list.append(self.cursor_sprite)
 
     def on_draw(self):
-        """ Draw everything """
+        """ Render The Screen """
         self.clear()
         arcade.draw_lrtb_rectangle_filled(0, SCREEN_WIDTH, SCREEN_HEIGHT * 2 / 3 + 50, 0, arcade.color.DESERT)
+
         self.cursor_list.draw()
-        pass
 
-
-    def on_mouse_motion(self, x, y, dx, dy):
-        """ Handle Mouse Motion """
-        self.player_sprite.center_x = x + 20
-        self.player_sprite.center_y = y - 20
-        pass
-
-
-    def on_update(self, delta_time):
-        """ Movement and game logic """
-        pass
-    
-
-    def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
-        pass
-        
+        # Put the score on the screen
+        output = f"Score: {self.score}"
+        arcade.draw_text(text=output, start_x=10, start_y=20,
+                         color=arcade.color.WHITE, font_size=14)
 
 
 def main():
-    """ Main function """
-    window = MyGame()
-    window.setup()
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    game_view = TrueOasis()
+    window.show_view(game_view)
+    game_view.setup()
     arcade.run()
 
 
