@@ -8,7 +8,8 @@ SCREEN_HEIGHT = 700
 SCREEN_TITLE = "True Oasis"
 
 # Difficulty for different statements
-DIFFICULTY_MODIFIER = 2
+DIFFICULTY_MODIFIER = 0
+DIFFICULTY_MAX = 2
 
 # True and false statements
 TRUE_STATEMENTS = ["10 > 4", "3 < 8", "22 > 11"], ["7 + 2 > 5", "8 - 8 < 9 + 8", "1 + 2 < 4"], ["3 * 2 < 10", "4 / 2 < 2 * 2", "4 * 5 > 3 * 6"]
@@ -17,42 +18,77 @@ FALSE_STATEMENTS = ["14 < 7", "8 < 6", "1 > 19"], ["10 + 4 > 23", "3 + 3 < 5", "
 
 # ---- ----
 class InstructionsView(arcade.View):
+    def __init__(self):
+        """ Create empty variables """
+        super().__init__()
+
+        # Create the sprites
+        self.cursor_list = None
+        self.cursor_sprite = None
+        self.arrow_list = None
+        
+        # Make the cursor invisible
+        self.window.set_mouse_visible(False)
+
     def on_show(self):
-        """ Set Background Colour """
+        """ Set Up The Game Presets """
+        # Background colour
         arcade.set_background_color(arcade.color.SKY_BLUE)
+
+        # Create the cursor
+        self.cursor_list = arcade.SpriteList()
+        self.cursor_sprite = arcade.Sprite("Cursor.png", .5)
+        self.cursor_list.append(self.cursor_sprite)
+
+        # Create the arrows to change difficulty
+        self.arrow_list = arcade.SpriteList()
+        
+        # Create the button instance
+        arrow_button = arcade.Sprite("Arrow.png", .1)
+        arrow_button.center_x = SCREEN_WIDTH * 1 / 3 + 150
+        arrow_button.center_y = SCREEN_HEIGHT / 6
+
+        self.arrow_list.append(arrow_button)
     
     def on_draw(self):
         self.clear()
         arcade.draw_text("True Oasis", 
                         SCREEN_WIDTH / 2, SCREEN_HEIGHT - 150,
                         font_size=50, anchor_x="center")
-        arcade.draw_text("Find the correct oasis to survive through the dry desert. The correct path is found by following the true equation", 
+        arcade.draw_text("Find the correct oasis to make it through the dry desert. The correct path is found by following the true equation", 
                         SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50,
                         font_size=30, anchor_x="center",
                         multiline=True, width=800)
-        arcade.draw_text("Left click to play", 
+        arcade.draw_text("Press 'SPACE' to play", 
                         SCREEN_WIDTH / 2, 150,
                         font_size=30, anchor_x="center")
-    
-    def on_mouse_press(self, x, y, button, modifiers):
-        """ Left click to continue """
+
+        # Put the difficulty level on the screen
+        difficulty = f"{DIFFICULTY_MODIFIER}"
+        arcade.draw_text(difficulty, start_x=10, start_y=20,
+                         color=arcade.color.WHITE, font_size=30)
+        
+        self.arrow_list.draw()
+        self.cursor_list.draw()
+        
+    def on_mouse_motion(self, x, y, dx, dy):
+        """ Handle Mouse Motion """
+        # Move the center of the player sprite to match the mouse x, y
+        self.cursor_sprite.center_x = x
+        self.cursor_sprite.center_y = y
+
+    def on_key_press(self, key, modifiers):
+        """ Press Space To Continue """
         game_view = TrueOasis()
         game_view.setup()
         self.window.show_view(game_view)
-
-
-
-class Cursor(arcade.Sprite):
-    def __init__(self, sprite, scale):
-        """ Collect Character Information """
-        super().__init__()
-        self.sprite = sprite
-        self.scale = scale
-
-    def update(self):
-        """ Move the cursor """
-        self.center_x = self.change_x
-        self.center_y = self.change_y
+    
+    def on_mouse_press(self, x, y, button, modifiers):
+        global DIFFICULTY_MODIFIER
+        statement_hit_list = arcade.check_for_collision_with_list(self.cursor_sprite, self.arrow_list)
+        for _ in statement_hit_list:
+            if statement_hit_list == statement_hit_list and DIFFICULTY_MODIFIER < DIFFICULTY_MAX:
+                DIFFICULTY_MODIFIER += 1
 
 
 
@@ -72,7 +108,7 @@ class TrueOasis(arcade.View):
 
         # Create player info
         self.cursor_sprite = None
-        self.score = 1000000
+        self.score = 0
 
         # After the player presses a button, don't allow them to continue pressing them
         self.has_pressed = False
@@ -158,7 +194,7 @@ class TrueOasis(arcade.View):
                          color=arcade.color.WHITE, font_size=30)
 
     def on_mouse_motion(self, x, y, dx, dy):
-        """ Handle Mouse Motion """
+        """ Handle Mouse Movement """
         # Move the center of the player sprite to match the mouse x, y
         self.cursor_sprite.center_x = x
         self.cursor_sprite.center_y = y
@@ -168,19 +204,19 @@ class TrueOasis(arcade.View):
         for _ in statement_hit_list:
             if statement_hit_list == [self.true_false_button[0][0]] and self.has_pressed == False:
                 if self.true_false_button[0][1] == 'TRUE':
-                    self.score += 300
+                    self.score += 300 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
                 else:
-                    self.score -= 100
+                    self.score -= 100 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
             elif statement_hit_list == [self.true_false_button[1][0]] and self.has_pressed == False:
                 if self.true_false_button[1][1] == 'TRUE':
-                    self.score += 300
+                    self.score += 300 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
                 else:
-                    self.score -= 100
+                    self.score -= 100 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
             elif statement_hit_list == [self.true_false_button[2][0]] and self.has_pressed == False:
                 if self.true_false_button[2][1] == 'TRUE':
-                    self.score += 300
+                    self.score += 300 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
                 else:
-                    self.score -= 100
+                    self.score -= 100 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
             
             # Stop error message from appearing when there is nothing to delete
             if self.has_pressed == False:
@@ -199,9 +235,7 @@ class TrueOasis(arcade.View):
             self.has_pressed = True
             self.is_paused = True
 
-    def on_update(self, delta_time):
-        if self.is_paused == False:
-            self.score -= 100000 * (delta_time * 2)
+
 
 def main():
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
