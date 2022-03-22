@@ -8,12 +8,12 @@ SCREEN_HEIGHT = 700
 SCREEN_TITLE = "True Oasis"
 
 # Difficulty for different statements
-DIFFICULTY_MODIFIER = 0
-DIFFICULTY_MAX = 2
+DIFFICULTY_MODIFIER = 1
+DIFFICULTY_MAX = 3
 
 # True and false statements
-TRUE_STATEMENTS = ["10 > 4", "3 < 8", "22 > 11"], ["7 + 2 > 5", "8 - 8 < 9 + 8", "1 + 2 < 4"], ["3 * 2 < 10", "4 / 2 < 2 * 2", "4 * 5 > 3 * 6"]
-FALSE_STATEMENTS = ["14 < 7", "8 < 6", "1 > 19"], ["10 + 4 > 23", "3 + 3 < 5", "14 - 4 < 14 - 5"], ["2 * 3 < 2 + 3", "6 / 3 > 6 / 2", "2 * 8 > 3 * 6"]
+TRUE_STATEMENTS = [], ["10 > 4", "3 < 8", "22 > 11"], ["7 + 2 > 5", "8 - 8 < 9 + 8", "1 + 2 < 4"], ["3 * 2 < 10", "4 / 2 < 2 * 2", "4 * 5 > 3 * 6"]
+FALSE_STATEMENTS = [], ["14 < 7", "8 < 6", "1 > 19"], ["10 + 4 > 23", "3 + 3 < 5", "14 - 4 < 14 - 5"], ["2 * 3 < 2 + 3", "6 / 3 > 6 / 2", "2 * 8 > 3 * 6"]
 
 
 # ---- ----
@@ -44,29 +44,35 @@ class InstructionsView(arcade.View):
         self.arrow_list = arcade.SpriteList()
         
         # Create the button instance
-        arrow_button = arcade.Sprite("Arrow.png", .1)
-        arrow_button.center_x = SCREEN_WIDTH * 1 / 3 + 150
-        arrow_button.center_y = SCREEN_HEIGHT / 6
+        for i in range(2):
+            arrow_button = arcade.Sprite("Arrow.png", .1)
+            arrow_button.angle = i * 180
+            arrow_button.center_x = SCREEN_WIDTH * 2 / 3 + 200
+            arrow_button.center_y = SCREEN_HEIGHT / 3 - (1 + (i * 150))
 
-        self.arrow_list.append(arrow_button)
+            self.arrow_list.append(arrow_button)
     
     def on_draw(self):
         self.clear()
         arcade.draw_text("True Oasis", 
                         SCREEN_WIDTH / 2, SCREEN_HEIGHT - 150,
-                        font_size=50, anchor_x="center")
+                        font_size=50, anchor_x="center", color=arcade.color.DESERT)
         arcade.draw_text("Find the correct oasis to make it through the dry desert. The correct path is found by following the true equation", 
                         SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50,
                         font_size=30, anchor_x="center",
-                        multiline=True, width=800)
+                        multiline=True, width=800, color=arcade.color.DESERT)
         arcade.draw_text("Press 'SPACE' to play", 
                         SCREEN_WIDTH / 2, 150,
-                        font_size=30, anchor_x="center")
+                        font_size=30, anchor_x="center", color=arcade.color.DESERT)
+        arcade.draw_text("Select grade level", 
+                        SCREEN_WIDTH * 2 / 3 + 200, 275,
+                        font_size=20, anchor_x="center", color=arcade.color.GREEN)
 
         # Put the difficulty level on the screen
         difficulty = f"{DIFFICULTY_MODIFIER}"
-        arcade.draw_text(difficulty, start_x=10, start_y=20,
-                         color=arcade.color.WHITE, font_size=30)
+        arcade.draw_text(difficulty, 
+                         start_x=SCREEN_WIDTH * 2 / 3 + 200, start_y=SCREEN_HEIGHT / 4 - 30,
+                         color=arcade.color.WHITE, font_size=30, anchor_x="center")
         
         self.arrow_list.draw()
         self.cursor_list.draw()
@@ -87,8 +93,12 @@ class InstructionsView(arcade.View):
         global DIFFICULTY_MODIFIER
         statement_hit_list = arcade.check_for_collision_with_list(self.cursor_sprite, self.arrow_list)
         for _ in statement_hit_list:
-            if statement_hit_list == statement_hit_list and DIFFICULTY_MODIFIER < DIFFICULTY_MAX:
+            if statement_hit_list[0] == self.arrow_list[0] and DIFFICULTY_MODIFIER < DIFFICULTY_MAX:
                 DIFFICULTY_MODIFIER += 1
+                return
+            elif statement_hit_list[0] == self.arrow_list[1] and DIFFICULTY_MODIFIER != 0:
+                DIFFICULTY_MODIFIER -= 1
+                return
 
 
 
@@ -146,12 +156,13 @@ class TrueOasis(arcade.View):
             true_false_marker = random.randrange(2)
             # Create a false oasis if random is 0, a past oasis has been created,
             #    or 2 false oasises were already created
+            
             if (true_false_marker == 0 or exception == True) and count != 2:
-                index = random.randrange(len(FALSE_STATEMENTS))
+                index = random.randrange(len(FALSE_STATEMENTS[DIFFICULTY_MODIFIER]))
                 statement = (FALSE_STATEMENTS[DIFFICULTY_MODIFIER][index], "FALSE")
                 count += 1
             else:
-                index = random.randrange(len(TRUE_STATEMENTS))
+                index = random.randrange(len(TRUE_STATEMENTS[DIFFICULTY_MODIFIER]))
                 statement = (TRUE_STATEMENTS[DIFFICULTY_MODIFIER][index], "TRUE")
                 exception = True
             
