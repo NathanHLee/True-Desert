@@ -1,4 +1,5 @@
 import arcade
+import arcade.gui
 import random
 
 # ---- Globals ----
@@ -15,6 +16,9 @@ DIFFICULTY_MAX = 3
 TRUE_STATEMENTS = [], ["10 > 4", "3 < 8", "22 > 11"], ["7 + 2 > 5", "8 - 8 < 9 + 8", "1 + 2 < 4"], ["3 * 2 < 10", "4 / 2 < 2 * 2", "4 * 5 > 3 * 6"]
 FALSE_STATEMENTS = [], ["14 < 7", "8 < 6", "1 > 19"], ["10 + 4 > 23", "3 + 3 < 5", "14 - 4 < 14 - 5"], ["2 * 3 < 2 + 3", "6 / 3 > 6 / 2", "2 * 8 > 3 * 6"]
 
+# Keep a global score
+SCORE = 0
+LIVES = 2
 
 # ---- ----
 class InstructionsView(arcade.View):
@@ -102,10 +106,56 @@ class InstructionsView(arcade.View):
 
 
 
+class EndScreen(arcade.View):
+    def __init__(self):
+        """ Create empty variables """
+        super().__init__()
+    
+    def on_draw(self):
+        self.clear()
+        if SCORE > 0:
+            arcade.draw_text(f"Congragulations! You made {SCORE} points!", 
+                            start_x=SCREEN_WIDTH / 2, start_y=SCREEN_HEIGHT / 2,
+                            color=arcade.color.WHITE, font_size=40, anchor_x="center")
+        else:
+            arcade.draw_text(f"Unfortunately, You lost {SCORE} points!", 
+                            start_x=SCREEN_WIDTH / 2, start_y=SCREEN_HEIGHT / 2,
+                            color=arcade.color.WHITE, font_size=40, anchor_x="center")
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        # Reset the globals
+        global SCORE
+        global LIVES
+        SCORE = 0
+        LIVES = 2
+        game_view = InstructionsView()
+        self.window.show_view(game_view)
+
+
 class TrueOasis(arcade.View):
     def __init__(self):
         """ Create empty variables """
         super().__init__()
+
+        # a UIManager to handle the UI.
+        self.manager = arcade.gui.UIManager()
+        self.manager.enable()
+
+        # Create the buttons
+        start_button = arcade.gui.UIFlatButton(width=200)
+        # Create a vertical BoxGroup to align buttons
+        self.v_box = arcade.gui.UIBoxLayout()
+        self.v_box.add(start_button.with_space_around(bottom=20))
+
+        # assign self.on_click_start as callback
+        start_button.on_click = self.on_click_start
+
+        self.manager.add(
+            arcade.gui.UIAnchorWidget(
+                anchor_x="center_x",
+                anchor_y="center_y",
+                child=self.v_box)
+        )
 
         # Create the sprites
         self.cursor_list = None
@@ -118,7 +168,7 @@ class TrueOasis(arcade.View):
 
         # Create player info
         self.cursor_sprite = None
-        self.score = 0
+        self.score = SCORE
 
         # After the player presses a button, don't allow them to continue pressing them
         self.has_pressed = False
@@ -203,6 +253,23 @@ class TrueOasis(arcade.View):
         output = f"Score: {self.score}"
         arcade.draw_text(text=output, start_x=10, start_y=20,
                          color=arcade.color.WHITE, font_size=30)
+        
+        # Put the lives on the screen
+        output = f"Lives: {LIVES}"
+        arcade.draw_text(text=output, start_x=10, start_y=SCREEN_HEIGHT - 40,
+                         color=arcade.color.WHITE, font_size=30)
+        
+        if self.has_pressed == True:
+            if LIVES != 0:
+                self.manager.draw()
+                arcade.draw_text("Continue", 
+                                SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+                                font_size=20, anchor_x="center")
+            else:
+                self.manager.draw()
+                arcade.draw_text("Return!", 
+                                SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+                                font_size=20, anchor_x="center")
 
     def on_mouse_motion(self, x, y, dx, dy):
         """ Handle Mouse Movement """
@@ -211,6 +278,7 @@ class TrueOasis(arcade.View):
         self.cursor_sprite.center_y = y
     
     def on_mouse_press(self, x, y, button, modifiers):
+        global LIVES
         statement_hit_list = arcade.check_for_collision_with_list(self.cursor_sprite, self.button_list)
         for _ in statement_hit_list:
             if statement_hit_list == [self.true_false_button[0][0]] and self.has_pressed == False:
@@ -218,16 +286,19 @@ class TrueOasis(arcade.View):
                     self.score += 300 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
                 else:
                     self.score -= 100 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
+                    LIVES -= 1
             elif statement_hit_list == [self.true_false_button[1][0]] and self.has_pressed == False:
                 if self.true_false_button[1][1] == 'TRUE':
                     self.score += 300 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
                 else:
                     self.score -= 100 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
+                    LIVES -= 1
             elif statement_hit_list == [self.true_false_button[2][0]] and self.has_pressed == False:
                 if self.true_false_button[2][1] == 'TRUE':
                     self.score += 300 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
                 else:
                     self.score -= 100 * (1 + (DIFFICULTY_MODIFIER * DIFFICULTY_MODIFIER))
+                    LIVES -= 1
             
             # Stop error message from appearing when there is nothing to delete
             if self.has_pressed == False:
@@ -245,6 +316,19 @@ class TrueOasis(arcade.View):
             # After the player has pressed a button, stop all button functions
             self.has_pressed = True
             self.is_paused = True
+
+    def on_click_start(self, event):
+        global SCORE
+        if LIVES != 0:
+            SCORE = self.score
+            game_view = TrueOasis()
+            game_view.setup()
+            self.window.show_view(game_view)
+        else:
+            SCORE = self.score
+            game_view = EndScreen()
+            self.window.show_view(game_view)
+
 
 
 
