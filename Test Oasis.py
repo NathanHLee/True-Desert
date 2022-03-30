@@ -1,6 +1,21 @@
 import arcade
 import arcade.gui
 import random
+import math
+import os
+from pathlib import Path
+from typing import Optional, Union
+
+from arcade.resources import resolve_resource_path
+import pyglet
+
+if os.environ.get("ARCADE_SOUND_BACKENDS"):
+    pyglet.options["audio"] = tuple(v.strip() for v in os.environ["ARCADE_SOUND_BACKENDS"].split(","))
+else:
+    pyglet.options["audio"] = ("openal", "xaudio2", "directsound", "pulse", "silent")
+
+import pyglet.media as media
+
 
 # ---- Globals ----
 # Screen
@@ -10,15 +25,22 @@ SCREEN_TITLE = "True Oasis"
 
 # Difficulty for different statements
 DIFFICULTY_MODIFIER = 1
-DIFFICULTY_MAX = 3
+DIFFICULTY_MAX = 4
 
 # True and false statements
-TRUE_STATEMENTS = [], ["10 > 4", "3 < 8", "22 > 11"], ["7 + 2 > 5", "8 - 8 < 9 + 8", "1 + 2 < 4"], ["3 * 2 < 10", "4 / 2 < 2 * 2", "4 * 5 > 3 * 6"]
-FALSE_STATEMENTS = [], ["14 < 7", "8 < 6", "1 > 19"], ["10 + 4 > 23", "3 + 3 < 5", "14 - 4 < 14 - 5"], ["2 * 3 < 2 + 3", "6 / 3 > 6 / 2", "2 * 8 > 3 * 6"]
+TRUE_STATEMENTS = ([],  ["10 > 4", "3 < 8", "22 > 11"],                       # Level 1
+                        ["7 + 2 > 5", "8 - 8 < 9 + 8", "1 + 2 < 4"],          # Level 2
+                        ["3 * 2 < 10", "4 / 2 < 2 * 2", "4 * 5 > 3 * 6"],     # Level 3
+                        ["2x + 3 = 9; x = 3", "5 + x = 7; x = 2", "x + x = 6; x = 3"])  # Level 4
+
+FALSE_STATEMENTS = ([], ["14 < 7", "8 < 6", "1 > 19"],                        # Level 1
+                        ["10 + 4 > 23", "3 + 3 < 5", "14 - 4 < 14 - 5"],      # Level 2
+                        ["2 * 3 < 2 + 3", "6 / 3 > 6 / 2", "2 * 8 > 3 * 6"],  # Level 3
+                        ["x + 4 = 3; x = 1", "4x + 3 = 12; x = 2", "2x + 8 = 10; x = 0"]) # Level 4
 
 # Keep a global score
 SCORE = 0
-LIVES = 2
+LIVES = 3
 
 # ---- ----
 class InstructionsView(arcade.View):
@@ -60,17 +82,17 @@ class InstructionsView(arcade.View):
         self.clear()
         arcade.draw_text("True Oasis", 
                         SCREEN_WIDTH / 2, SCREEN_HEIGHT - 150,
-                        font_size=50, anchor_x="center", color=arcade.color.DESERT)
+                        font_size=50, anchor_x="center", color=arcade.color.MAHOGANY)
         arcade.draw_text("Find the correct oasis to make it through the dry desert. The correct path is found by following the true equation", 
                         SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50,
                         font_size=30, anchor_x="center",
-                        multiline=True, width=800, color=arcade.color.DESERT)
+                        multiline=True, width=800, color=arcade.color.MAHOGANY)
         arcade.draw_text("Press 'SPACE' to play", 
                         SCREEN_WIDTH / 2, 150,
-                        font_size=30, anchor_x="center", color=arcade.color.DESERT)
+                        font_size=30, anchor_x="center", color=arcade.color.MAHOGANY)
         arcade.draw_text("Select grade level", 
                         SCREEN_WIDTH * 2 / 3 + 200, 275,
-                        font_size=20, anchor_x="center", color=arcade.color.GREEN)
+                        font_size=20, anchor_x="center", color=arcade.color.FOREST_GREEN)
 
         # Put the difficulty level on the screen
         difficulty = f"{DIFFICULTY_MODIFIER}"
@@ -100,7 +122,7 @@ class InstructionsView(arcade.View):
             if statement_hit_list[0] == self.arrow_list[0] and DIFFICULTY_MODIFIER < DIFFICULTY_MAX:
                 DIFFICULTY_MODIFIER += 1
                 return
-            elif statement_hit_list[0] == self.arrow_list[1] and DIFFICULTY_MODIFIER != 0:
+            elif statement_hit_list[0] == self.arrow_list[1] and DIFFICULTY_MODIFIER != 1:
                 DIFFICULTY_MODIFIER -= 1
                 return
 
@@ -110,6 +132,16 @@ class EndScreen(arcade.View):
     def __init__(self):
         """ Create empty variables """
         super().__init__()
+
+        # Create the sprites
+        self.cursor_list = None
+        self.cursor_sprite = None
+    
+    def on_show(self):
+        # Create the cursor
+        self.cursor_list = arcade.SpriteList()
+        self.cursor_sprite = arcade.Sprite("Cursor.png", .5)
+        self.cursor_list.append(self.cursor_sprite)
     
     def on_draw(self):
         self.clear()
@@ -118,18 +150,25 @@ class EndScreen(arcade.View):
                             start_x=SCREEN_WIDTH / 2, start_y=SCREEN_HEIGHT / 2,
                             color=arcade.color.WHITE, font_size=40, anchor_x="center")
         else:
-            arcade.draw_text(f"Unfortunately, You lost {SCORE} points!", 
+            arcade.draw_text(f"Unfortunately, You lost {SCORE * -1} points!", 
                             start_x=SCREEN_WIDTH / 2, start_y=SCREEN_HEIGHT / 2,
                             color=arcade.color.WHITE, font_size=40, anchor_x="center")
+        self.cursor_list.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
         # Reset the globals
         global SCORE
         global LIVES
         SCORE = 0
-        LIVES = 2
+        LIVES = 3
         game_view = InstructionsView()
         self.window.show_view(game_view)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """ Handle Mouse Motion """
+        # Move the center of the player sprite to match the mouse x, y
+        self.cursor_sprite.center_x = x
+        self.cursor_sprite.center_y = y
 
 
 class TrueOasis(arcade.View):
@@ -262,14 +301,16 @@ class TrueOasis(arcade.View):
         if self.has_pressed == True:
             if LIVES != 0:
                 self.manager.draw()
-                arcade.draw_text("Continue", 
+                arcade.draw_text("Continue!", 
                                 SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
                                 font_size=20, anchor_x="center")
+                self.cursor_list.draw()
             else:
                 self.manager.draw()
                 arcade.draw_text("Return!", 
                                 SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
                                 font_size=20, anchor_x="center")
+                self.cursor_list.draw()
 
     def on_mouse_motion(self, x, y, dx, dy):
         """ Handle Mouse Movement """
@@ -329,6 +370,184 @@ class TrueOasis(arcade.View):
             game_view = EndScreen()
             self.window.show_view(game_view)
 
+
+
+"""
+Sound Library.
+"""
+
+class Sound:
+    """ This class represents a sound you can play."""
+    def __init__(self, file_name: Union[str, Path], streaming: bool = False):
+        self.file_name: str = ""
+        file_name = resolve_resource_path(file_name)
+
+        if not Path(file_name).is_file():
+            raise FileNotFoundError(
+                f"The sound file '{file_name}' is not a file or can't be read."
+            )
+        self.file_name = str(file_name)
+
+        self.source: Union[media.StaticSource, media.StreamingSource] = media.load(self.file_name, streaming=streaming)
+
+        self.min_distance = 100000000  # setting the players to this allows for 2D panning with 3D audio
+
+
+    def play(self, volume: float = 1.0, pan: float = 0.0, loop: bool = False) -> media.Player:
+        """
+        Play the sound.
+
+        :param float volume: Volume, from 0=quiet to 1=loud
+        :param float pan: Pan, from -1=left to 0=centered to 1=right
+        :param bool loop: Loop, false to play once, true to loop continuously
+        """
+        if isinstance(self.source, media.StreamingSource) \
+                and self.source.is_player_source:
+            raise RuntimeError("Tried to play a streaming source more than once."
+                               " Streaming sources should only be played in one instance."
+                               " If you need more use a Static source.")
+
+        player: media.Player = media.Player()
+        player.volume = volume
+        player.position = (pan, 0.0, math.sqrt(1 - math.pow(pan, 2)))  # used to mimic panning with 3D audio
+        player.loop = loop
+        player.queue(self.source)
+        player.play()
+        media.Source._players.append(player)
+
+        def _on_player_eos():
+            media.Source._players.remove(player)
+            # There is a closure on player. To get the refcount to 0,
+            # we need to delete this function.
+            player.on_player_eos = None
+
+        player.on_player_eos = _on_player_eos
+        return player
+
+    def stop(self, player: media.Player) -> None:
+        """
+        Stop a currently playing sound.
+        """
+        player.pause()
+        player.delete()
+        if player in media.Source._players:
+            media.Source._players.remove(player)
+
+    def get_length(self) -> float:
+        """ Get length of audio in seconds """
+        return self.source.duration
+
+    def is_complete(self, player: media.Player) -> bool:
+        """ Return true if the sound is done playing. """
+        if player.time >= self.source.duration:
+            return True
+        else:
+            return False
+
+    def is_playing(self, player: media.Player) -> bool:
+        """
+        Return if the sound is currently playing or not
+
+        :param pyglet.media.Player player: Player returned from :func:`play_sound`.
+        :returns: A boolean, ``True`` if the sound is playing.
+        :rtype: bool
+
+        """
+        return player.playing
+
+    def get_volume(self, player: media.Player) -> float:
+        """
+        Get the current volume.
+
+        :param pyglet.media.Player player: Player returned from :func:`play_sound`.
+        :returns: A float, 0 for volume off, 1 for full volume.
+        :rtype: float
+        """
+        return player.volume
+
+    def set_volume(self, volume, player: media.Player) -> None:
+        """
+        Set the volume of a sound as it is playing.
+
+        :param float volume: Floating point volume. 0 is silent, 1 is full.
+        :param pyglet.media.Player player: Player returned from :func:`play_sound`.
+        """
+        player.volume = volume
+
+    def get_stream_position(self, player: media.Player) -> float:
+        """
+        Return where we are in the stream. This will reset back to
+        zero when it is done playing.
+
+        :param pyglet.media.Player player: Player returned from :func:`play_sound`.
+
+        """
+        return player.time
+
+
+def load_sound(path: Union[str, Path], streaming: bool = False) -> Optional[Sound]:
+    """
+    Load a sound.
+
+    :param Path path: Name of the sound file to load.
+    :param bool streaming: Boolean for determining if we stream the sound
+                           or load it all into memory. Set to ``True`` for long sounds to save
+                           memory, ``False`` for short sounds to speed playback.
+    :returns: Sound object which can be used by the  :func:`play_sound` function.
+    :rtype: Sound
+    """
+
+    file_name = str(path)
+    try:
+        sound = Sound(file_name, streaming)
+        return sound
+    except Exception as ex:
+        raise FileNotFoundError(f'Unable to load sound file: "{file_name}". Exception: {ex}')
+
+
+def play_sound(
+        sound: Sound, volume: float = 1.0, pan: float = 0.0, looping: bool = False
+) -> media.Player:
+    """
+    Play a sound.
+
+    :param Sound sound: Sound loaded by :func:`load_sound`. Do NOT use a string here for the filename.
+    :param float volume: Volume, from 0=quiet to 1=loud
+    :param float pan: Pan, from -1=left to 0=centered to 1=right
+    :param bool looping: Should we loop the sound over and over?
+    """
+    if sound is None:
+        print("Unable to play sound, no data passed in.")
+        return None
+    elif isinstance(sound, str):
+        msg = (
+            "Error, passed in a string as a sound. "
+            "Make sure to use load_sound first, and use that result in play_sound."
+        )
+        raise Exception(msg)
+    try:
+        return sound.play(volume, pan, looping)
+    except Exception as ex:
+        print("Error playing sound.", ex)
+
+
+def stop_sound(player: media.Player):
+    """
+    Stop a sound that is currently playing.
+
+    :param pyglet.media.Player player: Player returned from :func:`play_sound`.
+    """
+    if isinstance(player, Sound):
+        raise ValueError("stop_sound takes the media player object returned from the play() command, "
+                         "not the loaded Sound object.")
+
+    if not isinstance(player, media.Player):
+        raise ValueError("stop_sound takes a media player object returned from the play() command.")
+
+    player.pause()
+    player.delete()
+    if player in media.Source._players:
+        media.Source._players.remove(player)
 
 
 
